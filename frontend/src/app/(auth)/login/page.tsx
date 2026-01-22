@@ -1,19 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect } from "react";
+import { useWallet } from "@/hooks/useWallet";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const { address, isConnected, connectWallet, isConnecting } = useWallet();
+
+  // Redirect to dashboard if already connected
+  useEffect(() => {
+    if (isConnected && address) {
+      router.push("/dashboard");
+    }
+  }, [isConnected, address, router]);
 
   const handleConnect = async () => {
-    setLoading(true);
-    // TODO: integrate wagmi/MetaMask connect + nonce/sign later
-    setTimeout(() => {
-      router.push("/dashboard");
-      setLoading(false);
-    }, 400);
+    try {
+      connectWallet();
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
   };
 
   return (
@@ -23,13 +30,33 @@ export default function LoginPage() {
         <p className="text-sm text-slate-300 mb-6">
           Sign in with your wallet to continue.
         </p>
-        <button
-          onClick={handleConnect}
-          disabled={loading}
-          className="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 py-3 text-sm font-medium transition"
-        >
-          {loading ? "Connecting..." : "Connect Wallet"}
-        </button>
+        
+        {isConnected && address ? (
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-800 rounded-lg">
+              <div className="text-xs text-slate-400 mb-1">Connected</div>
+              <div className="text-sm font-mono truncate">{address}</div>
+            </div>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 py-3 text-sm font-medium transition"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={isConnecting}
+            className="w-full rounded-lg bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 py-3 text-sm font-medium transition"
+          >
+            {isConnecting ? "Connecting..." : "Connect Wallet"}
+          </button>
+        )}
+
+        <p className="text-xs text-slate-500 mt-4 text-center">
+          Make sure you have MetaMask installed
+        </p>
       </div>
     </main>
   );
