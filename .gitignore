@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Testing
+coverage/
+*.log
+
+# Production builds
+build/
+dist/
+out/
+.next/
+.turbo/
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# Blockchain / Contracts
+artifacts/
+cache/
+typechain-types/
+.openzeppelin/
+
+# Backend (when we create it)
+backend/node_modules/
+backend/dist/
+backend/.env*
+
+# Frontend specific (already covered above, but explicit)
+frontend/node_modules/
+frontend/.next/
+frontend/.env*
