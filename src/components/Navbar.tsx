@@ -1,32 +1,70 @@
+"use client";
+
 import Link from "next/link";
+import { isAuthenticated, logout } from "@/lib/auth";
+import { useEffect, useState } from "react";
+
 export default function Navbar() {
-    return (
-      <nav className="flex items-center justify-between px-6 py-4 bg-[#14141A]">
-        
-        <div className="text-xl font-bold gradient-primary bg-clip-text text-transparent">
+
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+
+    setLoggedIn(isAuthenticated());
+
+  }, []);
+
+  return (
+
+    <nav className="flex items-center justify-between px-6 py-4 bg-[#14141A]">
+
+      <Link href="/">
+        <div className="text-xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
           PGen
         </div>
-  
-        <div className="flex gap-4">
-  
+      </Link>
+
+      <div className="flex gap-4">
+
+        {loggedIn ? (
+
+          <>
+            <Link href="/dashboard">
+              <button className="px-4 py-2">
+                Dashboard
+              </button>
+            </Link>
+
+            <button
+              onClick={logout}
+              className="px-4 py-2 border border-gray-700 rounded-lg"
+            >
+              Logout
+            </button>
+          </>
+
+        ) : (
+
+          <>
             <Link href="/login">
-                <button className="px-4 py-2 rounded-lg hover:bg-[#1f1f28] transition">
-                    Login
-                </button>
+              <button className="px-4 py-2">
+                Login
+              </button>
             </Link>
-  
+
             <Link href="/signup">
-                <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90 transition">
-                    Sign Up
-                </button>
+              <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                Sign Up
+              </button>
             </Link>
-  
-          <button className="px-4 py-2 rounded-lg border border-gray-700">
-            Connect Wallet
-          </button>
-  
-        </div>
-  
-      </nav>
-    )
-  }
+          </>
+
+        )}
+
+      </div>
+
+    </nav>
+
+  );
+
+}
