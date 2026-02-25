@@ -1,21 +1,21 @@
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/db";
+import authRoutes from "./routes/auth";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// connect database
 connectDB();
 
+app.use("/api/auth", authRoutes);
+
 app.get("/", (req, res) => {
-  res.send("PGen backend running with TypeScript");
+  res.send("PGen backend running");
 });
 
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
 });
