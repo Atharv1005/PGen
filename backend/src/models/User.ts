@@ -39,7 +39,9 @@ const UserSchema: Schema = new Schema({
   },
 
   walletAddress: {
-    type: String
+    type: String,
+    unique: true,
+    sparse: true
   },
 
   createdAt: {

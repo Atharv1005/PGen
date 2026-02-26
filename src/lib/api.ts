@@ -94,3 +94,37 @@ export const sendMessage = async (
   return res.json();
 
 };
+
+export const connectWalletAPI = async (
+
+  userId: string,
+  walletAddress: string
+
+) => {
+
+  const res = await fetch(
+
+    "http://localhost:5000/api/auth/connect-wallet",
+
+    {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+
+        userId,
+        walletAddress
+
+      })
+
+    }
+
+  );
+
+  return res.json();
+
+};

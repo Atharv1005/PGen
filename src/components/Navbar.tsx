@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { isAuthenticated, logout } from "@/lib/auth";
 import { useEffect, useState } from "react";
+import { connectWallet } from "@/lib/wallet";
+import { connectWalletAPI } from "@/lib/api";
 
 export default function Navbar() {
 
@@ -13,6 +15,24 @@ export default function Navbar() {
     setLoggedIn(isAuthenticated());
 
   }, []);
+
+  const handleConnectWallet = async () => {
+
+    const address = await connectWallet();
+  
+    if (!address) return;
+  
+    const user = JSON.parse(
+  
+      localStorage.getItem("user") || "{}"
+  
+    );
+  
+    await connectWalletAPI(user.id, address);
+  
+    alert("Wallet connected: " + address);
+  
+  };
 
   return (
 
@@ -34,6 +54,13 @@ export default function Navbar() {
                 Dashboard
               </button>
             </Link>
+
+            <button
+              onClick={handleConnectWallet}
+              className="px-4 py-2 border border-gray-700 rounded-lg"
+            >
+              Connect Wallet
+            </button>
 
             <button
               onClick={logout}

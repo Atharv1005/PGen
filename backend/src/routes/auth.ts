@@ -134,4 +134,40 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @route POST /api/auth/connect-wallet
+ */
+router.post("/connect-wallet", async (req: Request, res: Response) => {
+
+  try {
+
+    const { userId, walletAddress } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+
+      userId,
+
+      { walletAddress },
+
+      { new: true }
+
+    );
+
+    res.json({
+      message: "Wallet connected",
+      walletAddress: user?.walletAddress
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error"
+    });
+
+  }
+
+});
+
 export default router;
