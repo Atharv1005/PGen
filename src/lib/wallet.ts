@@ -29,3 +29,46 @@ export const connectWallet = async (): Promise<string | null> => {
   }
 
 };
+
+export const sendCrypto = async (
+
+  recipientAddress: string,
+  amount: string
+
+): Promise<string | null> => {
+
+  try {
+
+    if (!window.ethereum) {
+
+      alert("MetaMask not installed");
+
+      return null;
+
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+
+    const signer = await provider.getSigner();
+
+    const tx = await signer.sendTransaction({
+
+      to: recipientAddress,
+
+      value: ethers.parseEther(amount)
+
+    });
+
+    await tx.wait();
+
+    return tx.hash;
+
+  } catch (error) {
+
+    console.error(error);
+
+    return null;
+
+  }
+
+};

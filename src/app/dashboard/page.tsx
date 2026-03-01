@@ -2,6 +2,7 @@
 
 import socket from "@/lib/socket";
 import Navbar from "@/components/Navbar";
+import { sendCrypto } from "@/lib/wallet";
 import { useEffect, useState } from "react";
 import { createChat, getMessages, sendMessage } from "@/lib/api";
 
@@ -75,6 +76,34 @@ export default function Dashboard() {
   
   };
 
+  const handlePayment = async () => {
+
+    const recipientWallet = prompt("Enter recipient wallet address");
+  
+    const amount = prompt("Enter amount in ETH");
+  
+    if (!recipientWallet || !amount) return;
+  
+    const txHash = await sendCrypto(recipientWallet, amount);
+  
+    if (txHash) {
+  
+      const paymentMessage = `Payment sent: ${amount} ETH\nTx: ${txHash}`;
+  
+      const msg = await sendMessage(
+  
+        chatId,
+        user.id,
+        paymentMessage
+  
+      );
+  
+      socket.emit("send_message", msg);
+  
+    }
+  
+  };
+
 
   return (
 
@@ -118,12 +147,12 @@ export default function Dashboard() {
 
 
           {/* Input */}
-          <div className="flex">
+          <div className="flex gap-2">
 
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 p-3 bg-[#14141A] rounded-lg mr-2"
+              className="flex-1 p-3 bg-[#14141A] rounded-lg"
               placeholder="Type message..."
             />
 
@@ -132,6 +161,13 @@ export default function Dashboard() {
               className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg"
             >
               Send
+            </button>
+
+            <button
+              onClick={handlePayment}
+              className="px-6 py-3 bg-green-600 rounded-lg"
+            >
+              Pay
             </button>
 
           </div>
