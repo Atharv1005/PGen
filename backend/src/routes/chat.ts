@@ -19,13 +19,16 @@ router.post("/create", async (req: Request, res: Response) => {
 
     if (existingChat) {
 
+      await existingChat.populate("participants", "username walletAddress");
+
       return res.json(existingChat);
 
     }
 
-    const chat = new Chat({
+    const chat = await Chat.create({
       participants: [userId1, userId2]
     });
+    await chat.populate("participants", "username walletAddress");
 
     await chat.save();
 

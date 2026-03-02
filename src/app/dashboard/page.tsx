@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [input, setInput] = useState("");
   const [chatId, setChatId] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [recipientWallet, setRecipientWallet] = useState<string | null>(null);
 
   // TEMP second user id (replace later with search)
   const secondUserId = "69a074f301c5e7cb5447415f";
@@ -57,6 +58,14 @@ export default function Dashboard() {
 
     socket.emit("join_chat", chat._id);
 
+    const otherUser = chat.participants.find((p: any) => p._id !== userId);
+
+    if(otherUser) {
+      setRecipientWallet(otherUser.walletAddress);
+    } else{
+      setRecipientWallet(null);
+    }
+
     const msgs = await getMessages(chat._id);
 
     setMessages(msgs);
@@ -78,30 +87,31 @@ export default function Dashboard() {
 
   const handlePayment = async () => {
 
-    const recipientWallet = prompt("Enter recipient wallet address");
-  
-    const amount = prompt("Enter amount in ETH");
-  
-    if (!recipientWallet || !amount) return;
-  
+    if(!recipientWallet) {
+      alert("Recipient has not connected wallet");
+      return;
+    }
+
+    const amount=prompt("Enter amount in ETH");
+
+    if(!amount) return;
+
     const txHash = await sendCrypto(recipientWallet, amount);
-  
-    if (txHash) {
-  
-      const paymentMessage = `Payment sent: ${amount} ETH\nTx: ${txHash}`;
-  
-      const msg = await sendMessage(
-  
+
+    if(txHash) {
+      const paymentMessage={
+        type: "payment",
+        amount,
+        txHash
+      };
+
+      const msg=await sendMessage(
         chatId,
         user.id,
-        paymentMessage
-  
+        JSON.stringify(paymentMessage)
       );
-  
       socket.emit("send_message", msg);
-  
     }
-  
   };
 
 
@@ -136,7 +146,33 @@ export default function Dashboard() {
               <div key={index} className="mb-2">
 
                 <span className="bg-[#1f1f28] p-2 rounded-lg inline-block">
-                  {msg.content}
+                  {(()=>{
+                    try{
+                      const parsed=JSON.parse(msg.content);
+                      if(parsed.type==="payment"){
+                        return(
+                          <div className="bg-green-700 p-3 rounded-lg">
+                            <p>💸 Payment Sent</p>
+                            <p>{parsed.amount} ETH</p>
+                            <a 
+                              href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
+                              target="_blank" 
+                              className="text-blue-300 underline"
+                            >
+                              View Transaction
+                            </a>
+                          </div>
+                        );
+                      }
+                    } catch {}
+
+                    return(
+                      <span className="bg-[#1f1f28] p-2 rounded-lg inline-block">
+                        {msg.content}
+                      </span>
+                    );
+
+                  })()}
                 </span>
 
               </div>
