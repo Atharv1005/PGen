@@ -137,73 +137,104 @@ export default function Dashboard() {
 
         {/* Chat Window */}
         <div className="flex flex-col flex-1 p-4">
-
+          
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto mb-4">
+          <div className="flex-1 overflow-y-auto mb-4 px-4 py-2 space-y-1">
 
-            {messages.map((msg, index) => (
+            {messages.map((msg, index) => {
 
-              <div key={index} className="mb-2">
+              const isMe = msg.sender === user?.id;
 
-                <span className="bg-[#1f1f28] p-2 rounded-lg inline-block">
-                  {(()=>{
-                    try{
-                      const parsed=JSON.parse(msg.content);
-                      if(parsed.type==="payment"){
-                        return(
-                          <div className="bg-green-700 p-3 rounded-lg">
-                            <p>💸 Payment Sent</p>
-                            <p>{parsed.amount} ETH</p>
-                            <a 
-                              href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
-                              target="_blank" 
-                              className="text-blue-300 underline"
-                            >
-                              View Transaction
-                            </a>
-                          </div>
-                        );
-                      }
-                    } catch {}
+              let content;
 
-                    return(
-                      <span className="bg-[#1f1f28] p-2 rounded-lg inline-block">
-                        {msg.content}
-                      </span>
-                    );
+              try {
 
-                  })()}
-                </span>
+                const parsed = JSON.parse(msg.content);
 
-              </div>
+                if (parsed.type === "payment") {
 
-            ))}
+                  content = (
+                    <div
+                      className={`p-4 rounded-xl max-w-xs ${
+                        isMe
+                          ? "bg-green-600 text-white"
+                          : "bg-emerald-800 text-white"
+                      }`}
+                    >
+                      <p className="font-semibold">
+                        {isMe ? "💸 Payment Sent" : "💰 Payment Received"}
+                      </p>
+
+                      <p className="text-sm mt-1">
+                        {parsed.amount} ETH
+                      </p>
+
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
+                        target="_blank"
+                        className="text-blue-300 underline text-xs"
+                      >
+                        View Transaction
+                      </a>
+                    </div>
+                  );
+
+                }
+
+              } catch {}
+
+              if (!content) {
+                content = (
+                  <div
+                    className={`px-4 py-2 rounded-xl max-w-xs ${
+                      isMe
+                        ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+                        : "bg-[#1f1f28] text-white"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={index}
+                  className={`flex mb-3 ${
+                    isMe ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {content}
+                </div>
+              );
+
+            })}
 
           </div>
 
 
           {/* Input */}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3 bg-[#14141A] p-3 rounded-xl">
 
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 p-3 bg-[#14141A] rounded-lg"
-              placeholder="Type message..."
+              className="flex-1 bg-transparent outline-none text-white"
+              placeholder="Type a message..."
             />
 
             <button
-              onClick={handleSend}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg"
+              onClick={handlePayment}
+              className="px-4 py-2 bg-green-600 rounded-lg hover:bg-green-500 transition"
             >
-              Send
+              Pay
             </button>
 
             <button
-              onClick={handlePayment}
-              className="px-6 py-3 bg-green-600 rounded-lg"
+              onClick={handleSend}
+              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg hover:opacity-90 transition"
             >
-              Pay
+              Send
             </button>
 
           </div>
