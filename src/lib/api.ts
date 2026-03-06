@@ -36,6 +36,15 @@ export const loginUser = async (data: any) => {
 
 };
 
+//Search user
+export const searchUsers = async (query: string) => {
+  const res = await fetch(
+    `http://localhost:5000/users/search?query=${query}`
+  );
+
+  return res.json();
+};
+
 // Create chat
 export const createChat = async (userId1: string, userId2: string) => {
 

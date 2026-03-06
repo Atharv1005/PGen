@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { sendCrypto } from "@/lib/wallet";
 import { useEffect, useState, useRef } from "react";
 import { createChat, getMessages, sendMessage } from "@/lib/api";
+import { searchUsers } from "@/lib/api";
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -13,6 +14,8 @@ export default function Dashboard() {
   const [chatId, setChatId] = useState("");
   const [user, setUser] = useState<any>(null);
   const [recipientWallet, setRecipientWallet] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [typing, setTyping] = useState(false);
 
   // TEMP second user id (replace later with search)
   const secondUserId = "69a074f301c5e7cb5447415f";
@@ -51,10 +54,50 @@ export default function Dashboard() {
     setMessages(msgs);
   };
 
+  const startChat = async (selectedUser: any) => {
+
+    const chat = await createChat(user.id, selectedUser._id);
+  
+    setChatId(chat._id);
+  
+    socket.emit("join_chat", chat._id);
+  
+    const msgs = await getMessages(chat._id);
+  
+    setMessages(msgs);
+  
+    setRecipientWallet(selectedUser.walletAddress);
+  };
+
+  useEffect(() => {
+
+    socket.on("user_typing", () => {
+      setTyping(true);
+    });
+  
+    socket.on("stop_typing", () => {
+      setTyping(false);
+    });
+  
+  }, []);
+
+  const handleSearch = async (e: any) => {
+    const query = e.target.value;
+  
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
+  
+    const users = await searchUsers(query);
+    setSearchResults(users);
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
     const msg = await sendMessage(chatId, user.id, input);
     socket.emit("send_message", msg);
+    socket.emit("stop_typing", chatId);
     setInput("");
   };
 
@@ -160,9 +203,33 @@ export default function Dashboard() {
                 <circle cx="6" cy="6" r="4.5" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" />
                 <path d="M9.5 9.5L12 12" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
-              <span style={{ fontSize: "13px", color: "rgba(240,240,248,0.3)" }}>Search messages…</span>
+              <input
+                placeholder="Search users..."
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "white",
+                  fontSize: "13px"
+                }}
+                onChange={handleSearch}
+              />
             </div>
           </div>
+          {searchResults.map((u) => (
+            <div
+              key={u._id}
+              onClick={() => startChat(u)}
+              style={{
+                padding: "10px",
+                cursor: "pointer",
+                borderBottom: "1px solid rgba(255,255,255,0.05)"
+              }}
+            >
+              {u.username}
+            </div>
+          ))}
 
           {/* Chat list */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
@@ -530,7 +597,11 @@ export default function Dashboard() {
             })}
             <div ref={bottomRef} />
           </div>
-
+          {typing && (
+            <div style={{ fontSize: "12px", color: "gray" }}>
+              User is typing...
+            </div>
+          )}
           {/* Input bar */}
           <div
             style={{
@@ -554,7 +625,14 @@ export default function Dashboard() {
             >
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value); 
+                  if(e.target.value.length>0){ 
+                    socket.emit("typing",chatId);
+                  } else{
+                    socket.emit("stop_typing",chatId);
+                  }
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Type a message…"
                 style={{

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
+import userRoutes from "./routes/users";
 
 import connectDB from "./config/db";
 import authRoutes from "./routes/auth";
@@ -16,6 +17,7 @@ connectDB();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/users", userRoutes);
 
 
 // Create HTTP server
@@ -51,6 +53,13 @@ io.on("connection", (socket) => {
 
   });
 
+  socket.on("typing", (chatId: string) => {
+    socket.to(chatId).emit("user_typing");
+  });
+
+  socket.on("stop_typing", (chatId: string) => {
+    socket.to(chatId).emit("stop_typing");
+  });
 
   socket.on("disconnect", () => {
 
