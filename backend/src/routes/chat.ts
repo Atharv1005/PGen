@@ -45,6 +45,19 @@ router.post("/create", async (req: Request, res: Response) => {
 });
 
 
+// Get chats for a user
+router.get("/user/:userId", async(req,res)=>{
+  try{
+    const chats=await Chat.find({
+      participants: req.params.userId
+    }).populate("participants", "username walletAddress");
+
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({message: "Server Error"});
+  }
+});
+
 /**
  * Get messages in chat
  */

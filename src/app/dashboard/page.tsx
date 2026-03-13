@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import { sendCrypto } from "@/lib/wallet";
 import { useEffect, useState, useRef } from "react";
 import { createChat, getMessages, sendMessage } from "@/lib/api";
-import { searchUsers } from "@/lib/api";
+import { getUserChats, searchUsers } from "@/lib/api";
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [recipientWallet, setRecipientWallet] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [typing, setTyping] = useState(false);
+  const [chats, setChats] = useState<any[]>([]);
+  const [activeUser, setActiveUser] = useState<any>(null);
 
   // TEMP second user id (replace later with search)
   const secondUserId = "69a074f301c5e7cb5447415f";
@@ -25,7 +27,7 @@ export default function Dashboard() {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      initializeChat(parsedUser.id);
+      loadChats(parsedUser.id);
     }
   }, []);
 
@@ -54,19 +56,49 @@ export default function Dashboard() {
     setMessages(msgs);
   };
 
-  const startChat = async (selectedUser: any) => {
+  const loadChats = async (userId: string) => {
 
-    const chat = await createChat(user.id, selectedUser._id);
+    const chatList = await getUserChats(userId);
   
+    setChats(chatList);
+  
+    if (chatList.length > 0) {
+  
+      openChat(chatList[0]);
+  
+    }
+  
+  };
+
+  const openChat = async (chat: any) => {
+
     setChatId(chat._id);
   
     socket.emit("join_chat", chat._id);
+  
+    const otherUser = chat.participants.find(
+      (p: any) => p._id !== user?.id
+    );
+    
+    setActiveUser(otherUser);
+
+    setRecipientWallet(otherUser?.walletAddress || null);
   
     const msgs = await getMessages(chat._id);
   
     setMessages(msgs);
   
-    setRecipientWallet(selectedUser.walletAddress);
+  };
+
+  const startChat = async (selectedUser: any) => {
+
+    const chat = await createChat(user.id, selectedUser._id);
+
+    setChats((prev) => [chat, ...prev]);
+  
+    openChat(chat);
+
+    setSearchResults([]);
   };
 
   useEffect(() => {
@@ -233,17 +265,31 @@ export default function Dashboard() {
 
           {/* Chat list */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
-            <div
-              style={{
-                padding: "11px 14px",
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(37,99,235,0.1))",
-                border: "1px solid rgba(124,58,237,0.2)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+
+          {chats.map((chat) => {
+
+            const otherUser = chat.participants.find(
+              (p: any) => p._id !== user?.id
+            );
+
+            return (
+              <div
+                key={chat._id}
+                onClick={() => openChat(chat)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "11px 14px",
+                  borderRadius: "12px",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(37,99,235,0.1))",
+                  border: "1px solid rgba(124,58,237,0.2)",
+                  transition: "all 0.2s ease"
+                }}
+              >
+
                 {/* Avatar */}
                 <div
                   style={{
@@ -257,34 +303,38 @@ export default function Dashboard() {
                     fontSize: "15px",
                     fontWeight: 700,
                     flexShrink: 0,
-                    fontFamily: "var(--font-display)",
+                    fontFamily: "var(--font-display)"
                   }}
                 >
-                  T
+                  {otherUser?.username?.[0]?.toUpperCase() || "?"}
                 </div>
+
+                {/* Name + Status */}
                 <div style={{ flex: 1, minWidth: 0 }}>
+
                   <div
                     style={{
                       fontFamily: "var(--font-display)",
                       fontWeight: 700,
                       fontSize: "14px",
-                      marginBottom: "2px",
+                      marginBottom: "2px"
                     }}
                   >
-                    Test User
+                    {otherUser?.username || "Unknown"}
                   </div>
+
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "rgba(240,240,248,0.4)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      color: "rgba(240,240,248,0.4)"
                     }}
                   >
                     Active now
                   </div>
+
                 </div>
+
+                {/* Online indicator */}
                 <div
                   style={{
                     width: "8px",
@@ -292,11 +342,15 @@ export default function Dashboard() {
                     borderRadius: "50%",
                     background: "#10b981",
                     boxShadow: "0 0 8px #10b981",
-                    flexShrink: 0,
+                    flexShrink: 0
                   }}
                 />
+
               </div>
-            </div>
+            );
+
+          })}
+
           </div>
 
           {/* Sidebar footer — user info */}
@@ -382,7 +436,7 @@ export default function Dashboard() {
                 fontFamily: "var(--font-display)",
               }}
             >
-              T
+              {activeUser?.username?.[0]?.toUpperCase() || "?"}
             </div>
             <div>
               <div
@@ -393,7 +447,7 @@ export default function Dashboard() {
                   letterSpacing: "-0.01em",
                 }}
               >
-                Test User
+                {activeUser?.username || "Select a chat"}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <div

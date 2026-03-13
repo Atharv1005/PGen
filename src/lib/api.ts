@@ -36,6 +36,14 @@ export const loginUser = async (data: any) => {
 
 };
 
+export const getUserChats=async(userId:string)=>{
+  const res=await fetch(
+    `http://localhost:5000/api/chat/user/${userId}`
+  );
+
+  return res.json();
+}
+
 //Search user
 export const searchUsers = async (query: string) => {
   const res = await fetch(
