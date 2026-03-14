@@ -50,7 +50,13 @@ router.get("/user/:userId", async(req,res)=>{
   try{
     const chats=await Chat.find({
       participants: req.params.userId
-    }).populate("participants", "username walletAddress");
+    })
+    .populate("participants", "username walletAddress")
+    .populate({
+      path: "lastMessage",
+      select: "content createdAt sender"
+    })
+    .sort({ updatedAt: -1, createdAt: -1});
 
     res.json(chats);
   } catch (err) {
@@ -98,6 +104,12 @@ router.post("/:chatId/message", async (req: Request, res: Response) => {
     });
 
     await message.save();
+
+      await Chat.findByIdAndUpdate(
+        req.params.chatId, 
+        { lastMessage: message._id },
+        {updatedAt: new Date()}
+      );
 
     res.json(message);
 

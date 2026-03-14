@@ -131,6 +131,27 @@ export default function Dashboard() {
     socket.emit("send_message", msg);
     socket.emit("stop_typing", chatId);
     setInput("");
+    setChats((prevChats) => {
+      const updated = prevChats.map((chat) =>
+        chat._id === chatId
+          ? {
+              ...chat,
+              lastMessage: {
+                content: msg.content,
+                createdAt: new Date(),
+                sender: msg.sender
+              }
+            }
+          : chat
+      );
+      // sort chats by latest message
+      return updated.sort(
+        (a, b) =>
+          new Date(b.lastMessage?.createdAt || 0).getTime() -
+          new Date(a.lastMessage?.createdAt || 0).getTime()
+      );
+    });
+      
   };
 
   const handlePayment = async () => {
@@ -311,7 +332,7 @@ export default function Dashboard() {
 
                 {/* Name + Status */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-
+                  {/* Username */}
                   <div
                     style={{
                       fontFamily: "var(--font-display)",
@@ -326,14 +347,41 @@ export default function Dashboard() {
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "rgba(240,240,248,0.4)"
+                      color: "rgba(240,240,248,0.45)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis"
                     }}
                   >
-                    Active now
+                    {chat.lastMessage
+                      ? chat.lastMessage.content.startsWith("{")
+                        ? "Payment Sent"
+                        : chat.lastMessage.content
+                      : "Start conversation"}
+                    
                   </div>
 
                 </div>
+                {/* Message Time */}
+                <div style={{ textAlign: "right", minWidth: "40px" }}>
 
+                  {chat.lastMessage && (
+
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "rgba(240,240,248,0.35)"
+                      }}
+                    >
+                      {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </div>
+
+                  )}
+
+                </div>
                 {/* Online indicator */}
                 <div
                   style={{
@@ -532,6 +580,7 @@ export default function Dashboard() {
                 if (parsed.type === "payment") {
                   content = (
                     <div
+                      className="payment-card"
                       style={{
                         padding: "16px 20px",
                         borderRadius: "18px",
@@ -555,7 +604,16 @@ export default function Dashboard() {
                           marginBottom: "8px",
                         }}
                       >
-                        <span style={{ fontSize: "18px" }}>{isMe ? "💸" : "💰"}</span>
+                        <img
+                          src="/icons/coin.png"
+                          alt="coin"
+                          style={{
+                            width:"20px",
+                            height: "20px",
+                            objectFit: "contain"
+                          }}
+                          className="coin-icon"
+                        />
                         {isMe ? "Payment Sent" : "Payment Received"}
                       </div>
                       <div
@@ -617,10 +675,10 @@ export default function Dashboard() {
               return (
                 <div
                   key={index}
+                  className="message-bubble"
                   style={{
                     display: "flex",
                     justifyContent: isMe ? "flex-end" : "flex-start",
-                    animation: "fade-in 0.25s ease forwards",
                   }}
                 >
                   {!isMe && (

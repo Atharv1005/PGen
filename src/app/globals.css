@@ -266,6 +266,61 @@
  .animate-glow {
    animation: glow-pulse 3s ease-in-out infinite;
  }
+/* Coin icon */
+  .coin-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  .payment-card:hover .coin-icon {
+    animation: coinFlip 1.5s ease forwards;
+  }
+
+  @keyframes coinFlip {
+    0% {
+      transform: rotateX(0deg);
+    }
+    100% {
+      transform: rotateX(180deg);
+    }
+  }
+
+  .coin-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.payment-card:hover .coin-icon {
+  animation: coinFlip 0.8s ease forwards;
+}
+
+@keyframes coinFlip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(360deg);
+  }
+}
+
+/* Message animation */
+.message-bubble {
+  animation: messageAppear 0.25s ease forwards;
+}
+
+@keyframes messageAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
  
  /* Scrollbar */
  ::-webkit-scrollbar       { width: 5px; height: 5px; }
