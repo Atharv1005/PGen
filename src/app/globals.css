@@ -321,6 +321,181 @@
     transform: translateY(0px) scale(1);
   }
 }
+
+/* ── Modal ──────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+
+  background: rgba(7, 7, 13, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  animation: fade-in 0.2s ease forwards;
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+
+  background: rgba(14, 14, 24, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 24px;
+  padding: 40px;
+
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.12),
+    0 8px 48px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(124, 58, 237, 0.08);
+
+  animation: modal-rise 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle top-edge accent line */
+.modal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 58, 237, 0.6),
+    rgba(6, 182, 212, 0.4),
+    transparent
+  );
+  border-radius: 100%;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(240, 240, 248, 0.4);
+
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  transform: scale(1.05);
+}
+
+/* ── Modal inner content helpers ────────────────────── */
+
+/* Icon badge at top of modal (optional, wrap your icon in this) */
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.15));
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.modal-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(240, 240, 248, 0.5);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* Button row at the bottom of modal */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-ghost {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+/* Danger variant for destructive modals */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+  transform: translateY(-1px);
+}
+
+/* ── Modal animation ────────────────────────────────── */
+
+@keyframes modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
  
  /* Scrollbar */
  ::-webkit-scrollbar       { width: 5px; height: 5px; }

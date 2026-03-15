@@ -6,6 +6,9 @@ import { sendCrypto } from "@/lib/wallet";
 import { useEffect, useState, useRef } from "react";
 import { createChat, getMessages, sendMessage } from "@/lib/api";
 import { getUserChats, searchUsers } from "@/lib/api";
+import PaymentModal from "@/components/modals/PaymentModal";
+import AlertModal from "@/components/modals/AlertModal";
+
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -18,6 +21,8 @@ export default function Dashboard() {
   const [typing, setTyping] = useState(false);
   const [chats, setChats] = useState<any[]>([]);
   const [activeUser, setActiveUser] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   // TEMP second user id (replace later with search)
   const secondUserId = "69a074f301c5e7cb5447415f";
@@ -154,9 +159,55 @@ export default function Dashboard() {
       
   };
 
+  const handlePaymentSubmit = async (amount: string) => {
+
+    if (!recipientWallet) return;
+  
+    try {
+  
+      const txHash = await sendCrypto(recipientWallet, amount);
+  
+      if (txHash) {
+  
+        const paymentMessage = {
+          type: "payment",
+          amount,
+          txHash
+        };
+  
+        const msg = await sendMessage(
+          chatId,
+          user.id,
+          JSON.stringify(paymentMessage)
+        );
+  
+        socket.emit("send_message", msg);
+  
+      }
+  
+    } catch (err: any) {
+  
+      if (err.message === "METAMASK_NOT_INSTALLED") {
+        setAlertMessage("MetaMask is not installed. Please install MetaMask to continue.");
+      }
+  
+      else if (err.message === "WRONG_NETWORK") {
+        setAlertMessage("Please switch MetaMask to the Sepolia Test Network.");
+      }
+  
+      else {
+        console.error(err);
+      }
+  
+    }
+  
+    setShowPaymentModal(false);
+  
+  };
+
   const handlePayment = async () => {
     if (!recipientWallet) {
-      alert("Recipient has not connected wallet");
+      setAlertMessage("Recipient has not connected wallet.");
       return;
     }
     const amount = prompt("Enter amount in ETH");
@@ -170,653 +221,667 @@ export default function Dashboard() {
   };
 
   return (
-    <main
-      style={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        color: "white",
-        fontFamily: "var(--font-body)",
-        overflow: "hidden",
-      }}
-    >
-      <Navbar />
+    <>
+      <main
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          color: "white",
+          fontFamily: "var(--font-body)",
+          overflow: "hidden",
+        }}
+      >
+        <Navbar />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-        {/* ── Sidebar ──────────────────────────────────── */}
-        <div
-          style={{
-            width: "280px",
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            background: "rgba(10,10,18,0.9)",
-            borderRight: "1px solid rgba(255,255,255,0.05)",
-          }}
-        >
-          {/* Sidebar header */}
+          {/* ── Sidebar ──────────────────────────────────── */}
           <div
             style={{
-              padding: "20px 20px 16px",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              width: "280px",
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              background: "rgba(10,10,18,0.9)",
+              borderRight: "1px solid rgba(255,255,255,0.05)",
             }}
           >
+            {/* Sidebar header */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "16px",
+                padding: "20px 20px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
               }}
             >
-              <span
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "15px",
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                Messages
-              </span>
               <div
                 style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "8px",
-                  background: "rgba(124,58,237,0.15)",
-                  border: "1px solid rgba(124,58,237,0.25)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Messages
+                </span>
+                <div
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "8px",
+                    background: "rgba(124,58,237,0.15)",
+                    border: "1px solid rgba(124,58,237,0.25)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 2V12M2 7H12" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Search bar */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "9px 12px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "10px",
                 }}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 2V12M2 7H12" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" />
+                  <circle cx="6" cy="6" r="4.5" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" />
+                  <path d="M9.5 9.5L12 12" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
+                <input
+                  placeholder="Search users..."
+                  style={{
+                    flex: 1,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: "white",
+                    fontSize: "13px"
+                  }}
+                  onChange={handleSearch}
+                />
               </div>
             </div>
+            {searchResults.map((u) => (
+              <div
+                key={u._id}
+                onClick={() => startChat(u)}
+                style={{
+                  padding: "10px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)"
+                }}
+              >
+                {u.username}
+              </div>
+            ))}
 
-            {/* Search bar */}
+            {/* Chat list */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
+
+            {chats.map((chat) => {
+
+              const otherUser = chat.participants.find(
+                (p: any) => p._id !== user?.id
+              );
+
+              return (
+                <div
+                  key={chat._id}
+                  onClick={() => openChat(chat)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "11px 14px",
+                    borderRadius: "12px",
+                    marginBottom: "8px",
+                    cursor: "pointer",
+                    background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(37,99,235,0.1))",
+                    border: "1px solid rgba(124,58,237,0.2)",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+
+                  {/* Avatar */}
+                  <div
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      fontFamily: "var(--font-display)"
+                    }}
+                  >
+                    {otherUser?.username?.[0]?.toUpperCase() || "?"}
+                  </div>
+
+                  {/* Name + Status */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Username */}
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        marginBottom: "2px"
+                      }}
+                    >
+                      {otherUser?.username || "Unknown"}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "rgba(240,240,248,0.45)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                      }}
+                    >
+                      {chat.lastMessage
+                        ? chat.lastMessage.content.startsWith("{")
+                          ? "Payment Sent"
+                          : chat.lastMessage.content
+                        : "Start conversation"}
+                      
+                    </div>
+
+                  </div>
+                  {/* Message Time */}
+                  <div style={{ textAlign: "right", minWidth: "40px" }}>
+
+                    {chat.lastMessage && (
+
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "rgba(240,240,248,0.35)"
+                        }}
+                      >
+                        {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </div>
+
+                    )}
+
+                  </div>
+                  {/* Online indicator */}
+                  <div
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: "#10b981",
+                      boxShadow: "0 0 8px #10b981",
+                      flexShrink: 0
+                    }}
+                  />
+
+                </div>
+              );
+
+            })}
+
+            </div>
+
+            {/* Sidebar footer — user info */}
+            {user && (
+              <div
+                style={{
+                  padding: "14px 16px",
+                  borderTop: "1px solid rgba(255,255,255,0.05)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #a855f7, #3b82f6)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    fontFamily: "var(--font-display)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.username?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {user.username || "You"}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "rgba(240,240,248,0.35)" }}>Online</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Chat Window ───────────────────────────────── */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              background: "var(--bg-base)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Chat header */}
             <div
               style={{
+                padding: "16px 32px",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(10,10,18,0.6)",
+                backdropFilter: "blur(12px)",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
-                padding: "9px 12px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: "10px",
+                gap: "12px",
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="6" cy="6" r="4.5" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" />
-                <path d="M9.5 9.5L12 12" stroke="rgba(240,240,248,0.3)" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-              <input
-                placeholder="Search users..."
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  color: "white",
-                  fontSize: "13px"
-                }}
-                onChange={handleSearch}
-              />
-            </div>
-          </div>
-          {searchResults.map((u) => (
-            <div
-              key={u._id}
-              onClick={() => startChat(u)}
-              style={{
-                padding: "10px",
-                cursor: "pointer",
-                borderBottom: "1px solid rgba(255,255,255,0.05)"
-              }}
-            >
-              {u.username}
-            </div>
-          ))}
-
-          {/* Chat list */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px 10px" }}>
-
-          {chats.map((chat) => {
-
-            const otherUser = chat.participants.find(
-              (p: any) => p._id !== user?.id
-            );
-
-            return (
               <div
-                key={chat._id}
-                onClick={() => openChat(chat)}
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                {activeUser?.username?.[0]?.toUpperCase() || "?"}
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {activeUser?.username || "Select a chat"}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: "#10b981",
+                      boxShadow: "0 0 6px #10b981",
+                    }}
+                  />
+                  <span style={{ fontSize: "12px", color: "rgba(240,240,248,0.4)" }}>Active now</span>
+                </div>
+              </div>
+
+              {/* ETH info badge */}
+              {recipientWallet && (
+                <div
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "7px 14px",
+                    borderRadius: "100px",
+                    background: "rgba(16,185,129,0.08)",
+                    border: "1px solid rgba(16,185,129,0.2)",
+                    fontSize: "12px",
+                    color: "#34d399",
+                    fontWeight: 600,
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.2" />
+                    <path d="M6 3V6.5L8 8" stroke="#10b981" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                  Wallet connected
+                </div>
+              )}
+            </div>
+
+            {/* Messages area */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "32px 40px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {messages.length === 0 && (
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "12px",
+                    color: "rgba(240,240,248,0.25)",
+                    paddingTop: "60px",
+                  }}
+                >
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <rect x="4" y="8" width="40" height="28" rx="6" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
+                    <path d="M14 18H34M14 24H26" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M20 36L24 42L28 36" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <p style={{ fontSize: "14px" }}>No messages yet. Say hello! 👋</p>
+                </div>
+              )}
+
+              {messages.map((msg, index) => {
+                const isMe = msg.sender === user?.id;
+                let content;
+
+                try {
+                  const parsed = JSON.parse(msg.content);
+                  if (parsed.type === "payment") {
+                    content = (
+                      <div
+                        className="payment-card"
+                        style={{
+                          padding: "16px 20px",
+                          borderRadius: "18px",
+                          maxWidth: "320px",
+                          background: isMe
+                            ? "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.15))"
+                            : "rgba(16,185,129,0.1)",
+                          border: `1px solid ${isMe ? "rgba(16,185,129,0.35)" : "rgba(16,185,129,0.2)"}`,
+                          backdropFilter: "blur(12px)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            fontFamily: "var(--font-display)",
+                            fontWeight: 700,
+                            fontSize: "14px",
+                            color: "#34d399",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <img
+                            src="/icons/coin.png"
+                            alt="coin"
+                            style={{
+                              width:"20px",
+                              height: "20px",
+                              objectFit: "contain"
+                            }}
+                            className="coin-icon"
+                          />
+                          {isMe ? "Payment Sent" : "Payment Received"}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "22px",
+                            fontFamily: "var(--font-display)",
+                            fontWeight: 800,
+                            letterSpacing: "-0.02em",
+                            color: "white",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          {parsed.amount} <span style={{ fontSize: "14px", color: "#34d399", fontWeight: 600 }}>ETH</span>
+                        </div>
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
+                          target="_blank"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            color: "#67e8f9",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            textDecoration: "none",
+                            fontFamily: "var(--font-display)",
+                          }}
+                        >
+                          View on Etherscan ↗
+                        </a>
+                      </div>
+                    );
+                  }
+                } catch {}
+
+                if (!content) {
+                  content = (
+                    <div
+                      style={{
+                        padding: "12px 18px",
+                        borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                        maxWidth: "520px",
+                        fontSize: "14px",
+                        lineHeight: 1.55,
+                        background: isMe
+                          ? "linear-gradient(135deg, #7c3aed, #2563eb)"
+                          : "rgba(255,255,255,0.06)",
+                        border: isMe ? "none" : "1px solid rgba(255,255,255,0.07)",
+                        color: "white",
+                        boxShadow: isMe ? "0 4px 20px rgba(124,58,237,0.25)" : "none",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className="message-bubble"
+                    style={{
+                      display: "flex",
+                      justifyContent: isMe ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {!isMe && (
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          fontFamily: "var(--font-display)",
+                          marginRight: "8px",
+                          flexShrink: 0,
+                          alignSelf: "flex-end",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        T
+                      </div>
+                    )}
+                    {content}
+                  </div>
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+            {typing && (
+              <div style={{ fontSize: "12px", color: "gray" }}>
+                User is typing...
+              </div>
+            )}
+            {/* Input bar */}
+            <div
+              style={{
+                padding: "16px 32px 20px",
+                borderTop: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(10,10,18,0.7)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  padding: "11px 14px",
-                  borderRadius: "12px",
-                  marginBottom: "8px",
-                  cursor: "pointer",
-                  background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(37,99,235,0.1))",
-                  border: "1px solid rgba(124,58,237,0.2)",
-                  transition: "all 0.2s ease"
+                  padding: "6px 6px 6px 20px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "16px",
+                  transition: "border-color 0.2s ease",
                 }}
               >
-
-                {/* Avatar */}
-                <div
-                  style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    fontFamily: "var(--font-display)"
+                <input
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value); 
+                    if(e.target.value.length>0){ 
+                      socket.emit("typing",chatId);
+                    } else{
+                      socket.emit("stop_typing",chatId);
+                    }
                   }}
-                >
-                  {otherUser?.username?.[0]?.toUpperCase() || "?"}
-                </div>
-
-                {/* Name + Status */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Username */}
-                  <div
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontWeight: 700,
-                      fontSize: "14px",
-                      marginBottom: "2px"
-                    }}
-                  >
-                    {otherUser?.username || "Unknown"}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "rgba(240,240,248,0.45)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis"
-                    }}
-                  >
-                    {chat.lastMessage
-                      ? chat.lastMessage.content.startsWith("{")
-                        ? "Payment Sent"
-                        : chat.lastMessage.content
-                      : "Start conversation"}
-                    
-                  </div>
-
-                </div>
-                {/* Message Time */}
-                <div style={{ textAlign: "right", minWidth: "40px" }}>
-
-                  {chat.lastMessage && (
-
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "rgba(240,240,248,0.35)"
-                      }}
-                    >
-                      {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </div>
-
-                  )}
-
-                </div>
-                {/* Online indicator */}
-                <div
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder="Type a message…"
                   style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#10b981",
-                    boxShadow: "0 0 8px #10b981",
-                    flexShrink: 0
+                    flex: 1,
+                    background: "transparent",
+                    outline: "none",
+                    border: "none",
+                    color: "white",
+                    fontSize: "14px",
+                    fontFamily: "var(--font-body)",
                   }}
                 />
 
-              </div>
-            );
-
-          })}
-
-          </div>
-
-          {/* Sidebar footer — user info */}
-          {user && (
-            <div
-              style={{
-                padding: "14px 16px",
-                borderTop: "1px solid rgba(255,255,255,0.05)",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <div
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #a855f7, #3b82f6)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  fontFamily: "var(--font-display)",
-                  flexShrink: 0,
-                }}
-              >
-                {user.username?.[0]?.toUpperCase() || "U"}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
+                {/* Pay button */}
+                <button
+                  onClick={() => setShowPaymentModal(true)}
                   style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "10px 18px",
+                    borderRadius: "11px",
+                    background: "rgba(16,185,129,0.12)",
+                    border: "1px solid rgba(16,185,129,0.25)",
+                    color: "#34d399",
                     fontSize: "13px",
                     fontFamily: "var(--font-display)",
                     fontWeight: 700,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    flexShrink: 0,
+                    letterSpacing: "0.01em",
                   }}
                 >
-                  {user.username || "You"}
-                </div>
-                <div style={{ fontSize: "11px", color: "rgba(240,240,248,0.35)" }}>Online</div>
-              </div>
-            </div>
-          )}
-        </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 4.5h10M2 7.5h6M9.5 9.5l2 2M9.5 11.5l2-2" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  Pay ETH
+                </button>
 
-        {/* ── Chat Window ───────────────────────────────── */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            background: "var(--bg-base)",
-            overflow: "hidden",
-          }}
-        >
-          {/* Chat header */}
-          <div
-            style={{
-              padding: "16px 32px",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
-              background: "rgba(10,10,18,0.6)",
-              backdropFilter: "blur(12px)",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "15px",
-                fontWeight: 700,
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              {activeUser?.username?.[0]?.toUpperCase() || "?"}
-            </div>
-            <div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "15px",
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {activeUser?.username || "Select a chat"}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <div
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: "#10b981",
-                    boxShadow: "0 0 6px #10b981",
-                  }}
-                />
-                <span style={{ fontSize: "12px", color: "rgba(240,240,248,0.4)" }}>Active now</span>
-              </div>
-            </div>
-
-            {/* ETH info badge */}
-            {recipientWallet && (
-              <div
-                style={{
-                  marginLeft: "auto",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "100px",
-                  background: "rgba(16,185,129,0.08)",
-                  border: "1px solid rgba(16,185,129,0.2)",
-                  fontSize: "12px",
-                  color: "#34d399",
-                  fontWeight: 600,
-                  fontFamily: "var(--font-display)",
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <circle cx="6" cy="6" r="5" stroke="#10b981" strokeWidth="1.2" />
-                  <path d="M6 3V6.5L8 8" stroke="#10b981" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-                Wallet connected
-              </div>
-            )}
-          </div>
-
-          {/* Messages area */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "32px 40px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            {messages.length === 0 && (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "12px",
-                  color: "rgba(240,240,248,0.25)",
-                  paddingTop: "60px",
-                }}
-              >
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <rect x="4" y="8" width="40" height="28" rx="6" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-                  <path d="M14 18H34M14 24H26" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M20 36L24 42L28 36" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <p style={{ fontSize: "14px" }}>No messages yet. Say hello! 👋</p>
-              </div>
-            )}
-
-            {messages.map((msg, index) => {
-              const isMe = msg.sender === user?.id;
-              let content;
-
-              try {
-                const parsed = JSON.parse(msg.content);
-                if (parsed.type === "payment") {
-                  content = (
-                    <div
-                      className="payment-card"
-                      style={{
-                        padding: "16px 20px",
-                        borderRadius: "18px",
-                        maxWidth: "320px",
-                        background: isMe
-                          ? "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.15))"
-                          : "rgba(16,185,129,0.1)",
-                        border: `1px solid ${isMe ? "rgba(16,185,129,0.35)" : "rgba(16,185,129,0.2)"}`,
-                        backdropFilter: "blur(12px)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          fontFamily: "var(--font-display)",
-                          fontWeight: 700,
-                          fontSize: "14px",
-                          color: "#34d399",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <img
-                          src="/icons/coin.png"
-                          alt="coin"
-                          style={{
-                            width:"20px",
-                            height: "20px",
-                            objectFit: "contain"
-                          }}
-                          className="coin-icon"
-                        />
-                        {isMe ? "Payment Sent" : "Payment Received"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "22px",
-                          fontFamily: "var(--font-display)",
-                          fontWeight: 800,
-                          letterSpacing: "-0.02em",
-                          color: "white",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        {parsed.amount} <span style={{ fontSize: "14px", color: "#34d399", fontWeight: 600 }}>ETH</span>
-                      </div>
-                      <a
-                        href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
-                        target="_blank"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          color: "#67e8f9",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          textDecoration: "none",
-                          fontFamily: "var(--font-display)",
-                        }}
-                      >
-                        View on Etherscan ↗
-                      </a>
-                    </div>
-                  );
-                }
-              } catch {}
-
-              if (!content) {
-                content = (
-                  <div
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                      maxWidth: "520px",
-                      fontSize: "14px",
-                      lineHeight: 1.55,
-                      background: isMe
-                        ? "linear-gradient(135deg, #7c3aed, #2563eb)"
-                        : "rgba(255,255,255,0.06)",
-                      border: isMe ? "none" : "1px solid rgba(255,255,255,0.07)",
-                      color: "white",
-                      boxShadow: isMe ? "0 4px 20px rgba(124,58,237,0.25)" : "none",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {msg.content}
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  key={index}
-                  className="message-bubble"
+                {/* Send button */}
+                <button
+                  onClick={handleSend}
                   style={{
                     display: "flex",
-                    justifyContent: isMe ? "flex-end" : "flex-start",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 22px",
+                    borderRadius: "11px",
+                    background: "linear-gradient(135deg, #7c3aed, #2563eb)",
+                    color: "white",
+                    fontSize: "13px",
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
+                    transition: "all 0.2s ease",
+                    flexShrink: 0,
+                    letterSpacing: "0.01em",
                   }}
                 >
-                  {!isMe && (
-                    <div
-                      style={{
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "50%",
-                        background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        fontFamily: "var(--font-display)",
-                        marginRight: "8px",
-                        flexShrink: 0,
-                        alignSelf: "flex-end",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      T
-                    </div>
-                  )}
-                  {content}
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </div>
-          {typing && (
-            <div style={{ fontSize: "12px", color: "gray" }}>
-              User is typing...
-            </div>
-          )}
-          {/* Input bar */}
-          <div
-            style={{
-              padding: "16px 32px 20px",
-              borderTop: "1px solid rgba(255,255,255,0.05)",
-              background: "rgba(10,10,18,0.7)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "6px 6px 6px 20px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "16px",
-                transition: "border-color 0.2s ease",
-              }}
-            >
-              <input
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value); 
-                  if(e.target.value.length>0){ 
-                    socket.emit("typing",chatId);
-                  } else{
-                    socket.emit("stop_typing",chatId);
-                  }
-                }}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Type a message…"
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  outline: "none",
-                  border: "none",
-                  color: "white",
-                  fontSize: "14px",
-                  fontFamily: "var(--font-body)",
-                }}
-              />
-
-              {/* Pay button */}
-              <button
-                onClick={handlePayment}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "10px 18px",
-                  borderRadius: "11px",
-                  background: "rgba(16,185,129,0.12)",
-                  border: "1px solid rgba(16,185,129,0.25)",
-                  color: "#34d399",
-                  fontSize: "13px",
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  flexShrink: 0,
-                  letterSpacing: "0.01em",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2 4.5h10M2 7.5h6M9.5 9.5l2 2M9.5 11.5l2-2" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                Pay ETH
-              </button>
-
-              {/* Send button */}
-              <button
-                onClick={handleSend}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  padding: "10px 22px",
-                  borderRadius: "11px",
-                  background: "linear-gradient(135deg, #7c3aed, #2563eb)",
-                  color: "white",
-                  fontSize: "13px",
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  border: "none",
-                  boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
-                  transition: "all 0.2s ease",
-                  flexShrink: 0,
-                  letterSpacing: "0.01em",
-                }}
-              >
-                Send
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2 7H12M8 3L12 7L8 11" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+                  Send
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7H12M8 3L12 7L8 11" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+      {showPaymentModal && (
+        <PaymentModal
+          onPay={handlePaymentSubmit}
+          onClose={() => setShowPaymentModal(false)}
+        />
+      )}
+      {alertMessage && (
+        <AlertModal
+          message={alertMessage}
+          onClose={() => setAlertMessage(null)}
+        />
+      )}
+    </>
   );
 }
