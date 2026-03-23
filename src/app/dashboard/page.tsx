@@ -8,6 +8,7 @@ import { createChat, getMessages, sendMessage } from "@/lib/api";
 import { getUserChats, searchUsers } from "@/lib/api";
 import PaymentModal from "@/components/modals/PaymentModal";
 import AlertModal from "@/components/modals/AlertModal";
+import PaymentSheet from "@/components/modals/PaymentSheet";
 
 
 export default function Dashboard() {
@@ -23,6 +24,8 @@ export default function Dashboard() {
   const [activeUser, setActiveUser] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [showSheet, setShowSheet] = useState(false);
+  const [selectedChain, setSelectedChain] = useState<string>("ethereum");
 
   // TEMP second user id (replace later with search)
   const secondUserId = "69a074f301c5e7cb5447415f";
@@ -159,11 +162,25 @@ export default function Dashboard() {
       
   };
 
-  const handlePaymentSubmit = async (amount: string) => {
+  const handleSheetPayment = async (chain: string, amount: string) => {
 
-    if (!recipientWallet) return;
+    if (!recipientWallet) {
+      setAlertMessage("Recipient has no wallet");
+      throw new Error("No wallet");
+    }
   
     try {
+  
+      if (chain !== "ethereum") {
+  
+        setShowSheet(false);
+  
+        setTimeout(() => {
+          setAlertMessage(`${chain.toUpperCase()} not supported yet`);
+        },200);
+  
+        return false;
+      }
   
       const txHash = await sendCrypto(recipientWallet, amount);
   
@@ -171,6 +188,7 @@ export default function Dashboard() {
   
         const paymentMessage = {
           type: "payment",
+          chain,
           amount,
           txHash
         };
@@ -183,27 +201,65 @@ export default function Dashboard() {
   
         socket.emit("send_message", msg);
   
+        return true;
+  
       }
   
-    } catch (err: any) {
+      throw new Error("Transaction failed");
   
-      if (err.message === "METAMASK_NOT_INSTALLED") {
-        setAlertMessage("MetaMask is not installed. Please install MetaMask to continue.");
-      }
-  
-      else if (err.message === "WRONG_NETWORK") {
-        setAlertMessage("Please switch MetaMask to the Sepolia Test Network.");
-      }
-  
-      else {
-        console.error(err);
-      }
-  
+    } catch (err) {
+      console.error(err);
+      setAlertMessage("Transaction failed");
+      throw err;
     }
-  
-    setShowPaymentModal(false);
-  
   };
+
+  // const handlePaymentSubmit = async (amount: string) => {
+
+  //   if (!recipientWallet) return;
+  
+  //   try {
+  
+  //     const txHash = await sendCrypto(recipientWallet, amount);
+  
+  //     if (txHash) {
+  
+  //       const paymentMessage = {
+  //         type: "payment",
+  //         chain: selectedChain,
+  //         amount,
+  //         txHash
+  //       };
+  
+  //       const msg = await sendMessage(
+  //         chatId,
+  //         user.id,
+  //         JSON.stringify(paymentMessage)
+  //       );
+  
+  //       socket.emit("send_message", msg);
+  
+  //     }
+  
+  //   } catch (err: any) {
+  
+  //     if (err.message === "METAMASK_NOT_INSTALLED") {
+  //       setAlertMessage("MetaMask is not installed. Please install MetaMask to continue.");
+  //     }
+  
+  //     else if (err.message === "WRONG_NETWORK") {
+  //       setAlertMessage("Please switch MetaMask to the Sepolia Test Network.");
+  //     }
+  
+  //     else {
+  //       console.error(err);
+  //     }
+  
+  //   }
+  
+  //   setShowPaymentModal(false);
+  
+  // };
 
   const handlePayment = async () => {
     if (!recipientWallet) {
@@ -629,7 +685,16 @@ export default function Dashboard() {
 
                 try {
                   const parsed = JSON.parse(msg.content);
+                
                   if (parsed.type === "payment") {
+                
+                    const explorerMap: any = {
+                      ethereum: "https://sepolia.etherscan.io/tx/",
+                      bitcoin: "https://blockstream.info/tx/",
+                      solana: "https://solscan.io/tx/",
+                      litecoin: "https://blockchair.com/litecoin/transaction/"
+                    };
+                
                     content = (
                       <div
                         className="payment-card"
@@ -644,6 +709,8 @@ export default function Dashboard() {
                           backdropFilter: "blur(12px)",
                         }}
                       >
+                
+                        {/* Header */}
                         <div
                           style={{
                             display: "flex",
@@ -660,7 +727,7 @@ export default function Dashboard() {
                             src="/icons/coin.png"
                             alt="coin"
                             style={{
-                              width:"20px",
+                              width: "20px",
                               height: "20px",
                               objectFit: "contain"
                             }}
@@ -668,6 +735,8 @@ export default function Dashboard() {
                           />
                           {isMe ? "Payment Sent" : "Payment Received"}
                         </div>
+                
+                        {/* Amount */}
                         <div
                           style={{
                             fontSize: "22px",
@@ -678,10 +747,21 @@ export default function Dashboard() {
                             marginBottom: "10px",
                           }}
                         >
-                          {parsed.amount} <span style={{ fontSize: "14px", color: "#34d399", fontWeight: 600 }}>ETH</span>
+                          {parsed.amount}{" "}
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              color: "#34d399",
+                              fontWeight: 600
+                            }}
+                          >
+                            {parsed.chain?.toUpperCase() || "ETH"}
+                          </span>
                         </div>
+                
+                        {/* Explorer Link */}
                         <a
-                          href={`https://sepolia.etherscan.io/tx/${parsed.txHash}`}
+                          href={`${explorerMap[parsed.chain] || explorerMap.ethereum}${parsed.txHash}`}
                           target="_blank"
                           style={{
                             display: "inline-flex",
@@ -694,11 +774,13 @@ export default function Dashboard() {
                             fontFamily: "var(--font-display)",
                           }}
                         >
-                          View on Etherscan ↗
+                          View Transaction ↗
                         </a>
+                
                       </div>
                     );
                   }
+                
                 } catch {}
 
                 if (!content) {
@@ -812,7 +894,7 @@ export default function Dashboard() {
 
                 {/* Pay button */}
                 <button
-                  onClick={() => setShowPaymentModal(true)}
+                  onClick={() => setShowSheet(true)}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -870,16 +952,22 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-      {showPaymentModal && (
+      {/* {showPaymentModal && (
         <PaymentModal
           onPay={handlePaymentSubmit}
           onClose={() => setShowPaymentModal(false)}
         />
-      )}
+      )} */}
       {alertMessage && (
         <AlertModal
           message={alertMessage}
           onClose={() => setAlertMessage(null)}
+        />
+      )}
+      {showSheet && (
+        <PaymentSheet
+          onClose={() => setShowSheet(false)}
+          onSend={handleSheetPayment}
         />
       )}
     </>

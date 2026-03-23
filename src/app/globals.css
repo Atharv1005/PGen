@@ -458,6 +458,215 @@
   border-radius: 12px;
 }
 
+/* ── Payment Bottom Sheet ───────────────────────── */
+
+.sheet-overlay {
+position: fixed;
+inset: 0;
+z-index: 100;
+background: rgba(7,7,13,0.6);
+backdrop-filter: blur(10px);
+display: flex;
+align-items: flex-end;
+justify-content: center;
+}
+
+.sheet-container {
+width: 100%;
+max-width: 520px;
+background: rgba(14,14,24,0.96);
+backdrop-filter: blur(24px);
+
+border-top-left-radius: 28px;
+border-top-right-radius: 28px;
+
+border: 1px solid rgba(255,255,255,0.08);
+border-bottom: none;
+
+padding: 24px 20px 28px;
+
+box-shadow:
+  0 -10px 40px rgba(0,0,0,0.6),
+  0 0 0 1px rgba(124,58,237,0.08);
+
+animation: sheet-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* drag handle */
+.sheet-handle {
+width: 42px;
+height: 4px;
+border-radius: 100px;
+background: rgba(255,255,255,0.15);
+margin: 0 auto 16px;
+}
+
+/* header */
+.sheet-title {
+font-family: var(--font-display);
+font-weight: 700;
+font-size: 15px;
+text-align: center;
+margin-bottom: 18px;
+}
+
+/* coin list */
+.coin-card {
+display: flex;
+align-items: center;
+justify-content: space-between;
+
+padding: 14px;
+border-radius: 14px;
+
+background: rgba(255,255,255,0.04);
+border: 1px solid rgba(255,255,255,0.06);
+
+margin-bottom: 10px;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.coin-card:hover {
+background: rgba(124,58,237,0.12);
+border-color: rgba(124,58,237,0.25);
+transform: translateY(-1px);
+}
+
+.coin-left {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.coin-icon {
+width: 36px;
+height: 36px;
+border-radius: 50%;
+background: linear-gradient(135deg,#7c3aed,#06b6d4);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+font-weight: 700;
+}
+
+.coin-name {
+font-size: 14px;
+font-weight: 600;
+}
+
+.coin-symbol {
+font-size: 11px;
+opacity: 0.5;
+}
+
+/* amount screen */
+.sheet-input {
+width: 100%;
+margin-top: 12px;
+padding: 14px;
+border-radius: 12px;
+
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.08);
+
+color: white;
+outline: none;
+font-size: 16px;
+}
+
+/* send button */
+.sheet-send-btn {
+margin-top: 18px;
+width: 100%;
+padding: 14px;
+
+border-radius: 14px;
+border: none;
+
+background: linear-gradient(135deg,#7c3aed,#2563eb);
+color: white;
+
+font-family: var(--font-display);
+font-weight: 700;
+cursor: pointer;
+
+box-shadow: 0 4px 24px rgba(124,58,237,0.35);
+}
+
+@keyframes sheet-slide-up {
+from {
+  transform: translateY(100%);
+}
+to {
+  transform: translateY(0);
+}
+}
+
+/* ── Sheet Close Animation ───────────────────── */
+
+.sheet-container.closing {
+  animation: sheet-slide-down 0.3s ease forwards;
+}
+
+@keyframes sheet-slide-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* ── Success State ───────────────────────── */
+
+.sheet-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.15);
+  border: 1px solid rgba(16,185,129,0.3);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 28px;
+  color: #34d399;
+
+  animation: pop-in 0.3s ease;
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Error Text ───────────────────────── */
+
+.sheet-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #f87171;
+  text-align: center;
+}
+
 /* Danger variant for destructive modals */
 .btn-danger {
   display: inline-flex;
